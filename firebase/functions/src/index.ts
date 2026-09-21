@@ -1,0 +1,5 @@
+import { onCall,HttpsError } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
+import { execute,DomainError } from './service';
+import { ZodError } from 'zod';
+export const schoolApi=onCall({region:'asia-southeast1',enforceAppCheck:process.env.FUNCTIONS_EMULATOR!=='true',memory:'512MiB',timeoutSeconds:120,maxInstances:20},async request=>{try{if(!request.auth)throw new HttpsError('unauthenticated','กรุณาเข้าสู่ระบบ');return await execute(request.auth.uid,String(request.data?.op||''),request.data?.payload||{},request.rawRequest.ip||'unknown')}catch(e){if(e instanceof HttpsError)throw e;if(e instanceof DomainError)throw new HttpsError(e.code as any,e.message);if(e instanceof ZodError)throw new HttpsError('invalid-argument',e.issues.map(i=>`${i.path.join('.')}: ${i.message}`).join(' · '));logger.error('school_operation_failed',{op:String(request.data?.op||''),kind:e instanceof Error?e.name:'Unknown'});throw new HttpsError('internal','ทำรายการไม่สำเร็จ กรุณาลองใหม่ ข้อมูลที่บันทึกแล้วจะไม่ถูกเพิ่มซ้ำ')}});

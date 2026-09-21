@@ -1,0 +1,1 @@
+{"indexes":[{"collectionGroup":"users","queryScope":"COLLECTION","fields":[{"fieldPath":"schoolId","order":"ASCENDING"},{"fieldPath":"role","order":"ASCENDING"}]},{"collectionGroup":"students","queryScope":"COLLECTION","fields":[{"fieldPath":"classId","order":"ASCENDING"},{"fieldPath":"status","order":"ASCENDING"}]}],"fieldOverrides":[]}

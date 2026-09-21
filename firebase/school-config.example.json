@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "mode": "spark-direct",
+  "schoolId": "watniyom-yatra",
+  "firebase": {
+    "apiKey": "AIza...",
+    "authDomain": "YOUR_PROJECT.firebaseapp.com",
+    "projectId": "YOUR_PROJECT",
+    "appId": "1:000000000000:web:xxxxxxxxxxxxxxxx"
+  },
+  "appCheckSiteKey": "",
+  "assets": [
+    {
+      "id": "robot-custom-01",
+      "name": "หุ่นยนต์ตัวละครพิเศษ",
+      "path": "models/custom/robot-custom-01.glb",
+      "active": true,
+      "bytes": 0,
+      "digest": "github-static"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+import type { Difficulty, Level, Program } from '../game/types';
+export type Identity={uid:string;schoolId:string;role:'admin'|'teacher'|'student';name:string;active:boolean;studentId?:string;credentialVersion?:number};
+export type SchoolClass={id:string;className:string;grade:string;roomNumber:string;academicYear:number;semester:number;teacherIds:string[];status:'active'|'inactive'};
+export type Student={id:string;studentCode:string;prefix:string;firstName:string;lastName:string;nickname:string;status:'active'|'inactive'|'graduated'|'transferred';classId:string;classIds:string[];studentNumber:number;academicYear:number;semester:number};
+export type ScoreWeights={mission:number;efficiency:number;attempts:number;time:number};
+export type MissionSettings={level:Level;active:boolean;energy:boolean;startEnergy:number;costs:{move:number;turn:number;pick:number;drop:number};weights:ScoreWeights};
+export type Room={world?:{id:number;name:string;sub:string;range:string;color:string};id:string;code:string;name:string;schoolId:string;teacherIds:string[];classIds:string[];status:'WAITING'|'ACTIVE'|'PAUSED'|'FINISHED'|'CLOSED';locked:boolean;hint:boolean;leaderboard:boolean;mode:'practice'|'challenge'|'assignment';levelId:number;difficulty:Difficulty;seed:string;roundId:string;round:number;attemptLimit:number;timeLimit:number;memberCount:number;members:Record<string,{displayName:string;status:string;lastSeen:number}>;startsAt:number;pausedAt:number;pausedMs:number;expiresAt:number;mission:MissionSettings};
+export type ServerResult={id:string;studentId:string;displayName:string;classId:string;academicYear:number;semester:number;levelId:number;roomId:string;roundId:string;mode:string;score:number;stars:number;blocks:number;attempts:number;seconds:number;seed:string;completedAt:number;verified:boolean;verification?:'server'|'client-rule-checked'};
+export type Submission={program:Program;keyTriggers:number;prediction:number;storyboard:number[];character:string;environment:string};
+export type SchoolSession={identity:Identity;room:Room;attemptId?:string};
+export const DEFAULT_WEIGHTS:ScoreWeights={mission:50,efficiency:25,attempts:15,time:10};

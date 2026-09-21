@@ -1,0 +1,12 @@
+export type Direction = 0 | 1 | 2 | 3;
+export type Point = { x: number; z: number };
+export type Difficulty = 'easy' | 'normal' | 'hard';
+export type Op = 'move' | 'left' | 'right' | 'pick' | 'drop' | 'say' | 'show' | 'hide' | 'repeat' | 'broadcast' | 'ending';
+export type Command = { op: Op; id?: string; text?: string; actor?: 'bot' | 'friend'; count?: number; body?: Command[] };
+export type Program = { start: Command[]; key: Command[]; touch: Command[]; receive: Command[] };
+export type MapRules = { gridSize:number; layout:"straight"|"bent"|"circuit"; rotate:boolean; obstacleDensity:number; itemIndex:number; gateIndex:number };
+export type Level = { mapRules?:MapRules; scene?:"forest"|"sunset"|"sky"; npc?:boolean; lessonId?:string; stage?:number; difficulty?:Difficulty; timeLimit?:number; attemptLimit?:number; starRules?:{three:number;two:number}; assetId?:string; id: number; world: number; title: string; concept: string; description: string; instruction: string; kind: 'path' | 'key' | 'delivery' | 'logic' | 'story' | 'loop'; blocks: Op[]; hints: string[]; stars: number; required?: string[]; prediction?: { question: string; choices: string[]; answer: number }; storyboard?: string[] };
+export type GameMap = { seed: string; levelId: number; size: number; start: Point; direction: Direction; goal: Point; wrongGoal?: Point; path: Point[]; item?: Point; gate?: Point; obstacles: Point[]; optimal: Command[] };
+export type GameState = { position: Point; direction: Direction; energy: number; carrying: boolean; picked: boolean; delivered: boolean; visible: boolean; steps: number; speech: string; speaker: 'bot' | 'friend'; ended: boolean; touched: boolean; log: string[]; features: string[] };
+export type SavedResult = { levelId: number; score: number; stars: number; blocks: number; attempts: number; seconds: number; hints: number; completedAt: string; seed: string; mode: 'practice' };
+export type Preferences = { character: 'mint' | 'sunny' | 'violet'; environment: 'forest' | 'sunset' | 'sky'; quality: 'low' | 'medium' | 'high'; sound: boolean; music: boolean; musicVolume: number; effectsVolume: number; speed: number; difficulty: Difficulty; energy: boolean };

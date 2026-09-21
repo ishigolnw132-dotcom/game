@@ -1,0 +1,13 @@
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import CodeQuest from '../components/game/CodeQuest';
+import SchoolPortal from '../components/school/SchoolPortal';
+import '../app/globals.css';
+import '@fontsource/noto-sans-thai/400.css';
+import '@fontsource/noto-sans-thai/500.css';
+import '@fontsource/noto-sans-thai/600.css';
+import '@fontsource/noto-sans-thai/700.css';
+import '@fontsource/nunito/700.css';
+import '@fontsource/nunito/800.css';
+const base=new URL(document.baseURI).pathname,relative=location.pathname.startsWith(base)?location.pathname.slice(base.length):location.pathname.replace(/^\//,'');
+createRoot(document.getElementById('root')!).render(relative.startsWith('school')?<SchoolPortal/>:<CodeQuest/>);

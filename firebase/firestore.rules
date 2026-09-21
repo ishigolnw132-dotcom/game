@@ -1,0 +1,197 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signed() { return request.auth != null; }
+  function hasUser() { return signed() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+  function u() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+  function active() { return hasUser() && u().active == true; }
+  function sameSchool(schoolId) { return active() && u().schoolId == schoolId; }
+  function staff(schoolId) { return sameSchool(schoolId) && u().role in ['admin','teacher']; }
+  function admin(schoolId) { return sameSchool(schoolId) && u().role == 'admin'; }
+  function student(schoolId) { return sameSchool(schoolId) && u().role == 'student' && u().studentId is string; }
+  function studentData(schoolId) { return get(/databases/$(database)/documents/schools/$(schoolId)/students/$(u().studentId)).data; }
+  function validStudent(schoolId) { return student(schoolId) && studentData(schoolId).status == 'active' && studentData(schoolId).credentialVersion == u().credentialVersion; }
+  function validStudentUserCreate(uid) {
+   let d = request.resource.data;
+   let t = get(/databases/$(database)/documents/student_join_keys/$(d.joinKey)).data;
+   let s = get(/databases/$(database)/documents/schools/$(d.schoolId)/students/$(d.studentId)).data;
+   return signed() && request.auth.uid == uid && d.uid == uid && d.role == 'student' && d.active == true &&
+    d.schoolId is string && d.studentId is string && d.joinKey is string &&
+    t.schoolId == d.schoolId && t.studentId == d.studentId && t.version == d.credentialVersion && t.studentCode == s.studentCode &&
+    s.status == 'active' && s.credentialVersion == d.credentialVersion;
+  }
+  function validStudentUserRefresh(uid) {
+   let d = request.resource.data;
+   let t = get(/databases/$(database)/documents/student_join_keys/$(d.joinKey)).data;
+   let s = get(/databases/$(database)/documents/schools/$(d.schoolId)/students/$(d.studentId)).data;
+   return signed() && request.auth.uid == uid && resource.data.role == 'student' && d.role == 'student' &&
+    d.schoolId == resource.data.schoolId && d.studentId == resource.data.studentId && d.active == true &&
+    t.schoolId == d.schoolId && t.studentId == d.studentId && t.version == d.credentialVersion && t.studentCode == s.studentCode &&
+    s.status == 'active' && s.credentialVersion == d.credentialVersion &&
+    d.diff(resource.data).affectedKeys().hasOnly(['name','updatedAt','credentialVersion','joinKey']);
+  }
+  function safeStudentRoomUpdate(schoolId) {
+   let old = resource.data;
+   let next = request.resource.data;
+   let sid = u().studentId;
+   return validStudent(schoolId) && studentData(schoolId).classId in old.classIds &&
+    next.diff(old).affectedKeys().hasOnly(['members','memberCount','updatedAt']) &&
+    next.members.diff(old.members).affectedKeys().hasOnly([sid]) &&
+    next.members[sid] is map && next.members[sid].status in ['waiting','playing','finished'] &&
+    next.members[sid].lastSeen is number &&
+    next.memberCount >= old.memberCount && next.memberCount <= old.memberCount + 1 && next.memberCount <= 40;
+  }
+  function validAttemptCreate(schoolId) {
+   let a = request.resource.data;
+   let r = get(/databases/$(database)/documents/schools/$(schoolId)/rooms/$(a.roomId)).data;
+   let e = get(/databases/$(database)/documents/schools/$(schoolId)/rooms/$(a.roomId)/eligible/$(u().studentId)).data;
+   return validStudent(schoolId) && a.studentId == u().studentId && a.schoolId == schoolId &&
+    a.status == 'started' && a.classId == studentData(schoolId).classId &&
+    r.status == 'ACTIVE' && r.roundId == a.roundId && r.levelId == a.levelId &&
+    e.studentId == u().studentId && e.roundId == a.roundId && e.classId == a.classId;
+  }
+  function validScoreCreate(schoolId, scoreId) {
+   let s = request.resource.data;
+   let a = get(/databases/$(database)/documents/schools/$(schoolId)/attempts/$(scoreId)).data;
+   return validStudent(schoolId) && s.id == scoreId && s.studentId == u().studentId && s.schoolId == schoolId &&
+    a.studentId == u().studentId && a.schoolId == schoolId && a.roomId == s.roomId && a.roundId == s.roundId &&
+    a.levelId == s.levelId && a.classId == s.classId && a.enrollmentId == s.enrollmentId &&
+    s.verified == false && s.verification == 'client-rule-checked' &&
+    s.score is number && s.score >= 0 && s.score <= 100 &&
+    s.stars is number && s.stars >= 0 && s.stars <= 3 &&
+    s.blocks is number && s.blocks >= 0 && s.blocks <= 1000 &&
+    s.attempts is number && s.attempts >= 1 && s.attempts <= 100 &&
+    s.seconds is number && s.seconds >= 0 && s.seconds <= 90000;
+  }
+  function scoreBackedResult(schoolId) {
+   let d = request.resource.data;
+   let s = getAfter(/databases/$(database)/documents/schools/$(schoolId)/scores/$(d.id)).data;
+   return validStudent(schoolId) && d.studentId == u().studentId && d.schoolId == schoolId &&
+    s.studentId == d.studentId && s.schoolId == schoolId && s.roomId == d.roomId && s.roundId == d.roundId &&
+    s.levelId == d.levelId && s.score == d.score && s.stars == d.stars && s.blocks == d.blocks &&
+    s.attempts == d.attempts && s.seconds == d.seconds && s.verified == false;
+  }
+
+  match /users/{uid} {
+   allow get: if signed() && (request.auth.uid == uid || (active() && resource.data.schoolId == u().schoolId && u().role in ['admin','teacher']));
+   allow list: if active() && u().role == 'admin' && resource.data.schoolId == u().schoolId;
+   allow create: if validStudentUserCreate(uid) || (active() && u().role == 'admin' && request.resource.data.schoolId == u().schoolId && request.resource.data.role == 'teacher');
+   allow update: if active() && (
+    (request.auth.uid == uid && resource.data.role == 'student' && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','updatedAt']) || validStudentUserRefresh(uid))) ||
+    (u().role == 'admin' && resource.data.schoolId == u().schoolId && resource.data.role == 'teacher' && request.resource.data.schoolId == resource.data.schoolId && request.resource.data.role == 'teacher')
+   );
+   allow delete: if active() && u().role == 'admin' && resource.data.schoolId == u().schoolId && resource.data.role == 'teacher';
+  }
+
+  match /room_codes/{code} {
+   allow get: if signed();
+   allow list: if false;
+   allow create, update: if staff(request.resource.data.schoolId);
+   allow delete: if staff(resource.data.schoolId);
+  }
+  match /student_join_keys/{key} {
+   allow get: if signed();
+   allow list: if false;
+   allow create, update: if staff(request.resource.data.schoolId);
+   allow delete: if staff(resource.data.schoolId);
+  }
+
+  match /schools/{schoolId} {
+   allow get: if sameSchool(schoolId);
+   allow list: if false;
+   allow create: if false;
+   allow update: if admin(schoolId);
+   allow delete: if false;
+
+   match /classes/{classId} {
+    allow read: if staff(schoolId) || (validStudent(schoolId) && studentData(schoolId).classId == classId);
+    allow write: if admin(schoolId);
+   }
+   match /students/{studentId} {
+    allow read: if staff(schoolId) || (validStudent(schoolId) && u().studentId == studentId);
+    allow write: if staff(schoolId);
+   }
+   match /student_credentials/{studentId} { allow read, write: if staff(schoolId); }
+   match /student_cache_keys/{studentId} {
+    allow get: if staff(schoolId) || (validStudent(schoolId) && u().studentId == studentId);
+    allow list: if false;
+    allow write: if staff(schoolId);
+   }
+   match /student_code_keys/{key} { allow read, write: if staff(schoolId); }
+   match /enrollment_number_keys/{key} { allow read, write: if staff(schoolId); }
+   match /enrollments/{enrollmentId} {
+    allow read: if staff(schoolId) || (validStudent(schoolId) && resource.data.studentId == u().studentId);
+    allow write: if staff(schoolId);
+   }
+   match /student_import_jobs/{jobId} {
+    allow read, write: if staff(schoolId);
+    match /rows/{rowId} { allow read, write: if staff(schoolId); }
+   }
+   match /worlds/{worldId} { allow read: if staff(schoolId); allow write: if admin(schoolId); }
+   match /missions/{missionId} { allow read: if staff(schoolId); allow write: if admin(schoolId); }
+   match /asset_settings/{assetId} { allow read: if sameSchool(schoolId); allow write: if admin(schoolId); }
+   match /system_logs/{logId} { allow read: if staff(schoolId); allow write: if staff(schoolId); }
+
+   match /rooms/{roomId} {
+    allow get: if staff(schoolId) || (validStudent(schoolId) && studentData(schoolId).classId in resource.data.classIds);
+    allow list: if staff(schoolId);
+    allow create, delete: if staff(schoolId);
+    allow update: if staff(schoolId) || safeStudentRoomUpdate(schoolId);
+    match /eligible/{studentId} {
+     allow get: if staff(schoolId) || (validStudent(schoolId) && u().studentId == studentId);
+     allow list: if staff(schoolId);
+     allow write: if staff(schoolId);
+    }
+   }
+   match /room_members/{memberId} {
+    allow read: if staff(schoolId) || (validStudent(schoolId) && resource.data.studentId == u().studentId);
+    allow create, update: if staff(schoolId) || (validStudent(schoolId) && request.resource.data.studentId == u().studentId && request.resource.data.schoolId == schoolId);
+    allow delete: if staff(schoolId);
+   }
+   match /round_players/{playerId} {
+    allow read: if staff(schoolId) || (validStudent(schoolId) && resource.data.studentId == u().studentId);
+    allow create: if staff(schoolId) || (validStudent(schoolId) && request.resource.data.studentId == u().studentId && request.resource.data.attempts == 1);
+    allow update: if staff(schoolId) || (validStudent(schoolId) && resource.data.studentId == u().studentId &&
+     request.resource.data.studentId == resource.data.studentId && request.resource.data.roomId == resource.data.roomId &&
+     request.resource.data.roundId == resource.data.roundId && request.resource.data.attempts == resource.data.attempts + 1 &&
+     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attempts','activeAttempt']));
+    allow delete: if staff(schoolId);
+   }
+   match /attempts/{attemptId} {
+    allow read: if staff(schoolId) || (validStudent(schoolId) && resource.data.studentId == u().studentId);
+    allow create: if validAttemptCreate(schoolId);
+    allow update: if validStudent(schoolId) && resource.data.studentId == u().studentId &&
+     request.resource.data.studentId == resource.data.studentId && request.resource.data.schoolId == schoolId &&
+     request.resource.data.status == 'client-checked' &&
+     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','completedAt']);
+    allow delete: if false;
+   }
+   match /scores/{scoreId} {
+    allow read: if staff(schoolId) || (validStudent(schoolId) && resource.data.studentId == u().studentId);
+    allow create: if validScoreCreate(schoolId, scoreId);
+    allow update, delete: if false;
+   }
+   match /progress/{progressId} {
+    allow read: if staff(schoolId) || (validStudent(schoolId) && resource.data.studentId == u().studentId);
+    allow create, update: if scoreBackedResult(schoolId);
+    allow delete: if false;
+   }
+   match /workspaces/{workspaceId} {
+    allow read: if staff(schoolId) || (validStudent(schoolId) && resource.data.studentId == u().studentId);
+    allow create, update: if validStudent(schoolId) && request.resource.data.studentId == u().studentId && request.resource.data.schoolId == schoolId;
+    allow delete: if false;
+   }
+   match /room_rounds/{roundId} {
+    allow read: if staff(schoolId) || validStudent(schoolId);
+    allow write: if staff(schoolId);
+    match /rankings/{studentId} {
+     allow read: if staff(schoolId) || validStudent(schoolId);
+     allow create, update: if validStudent(schoolId) && u().studentId == studentId && request.resource.data.studentId == studentId && scoreBackedResult(schoolId);
+     allow delete: if false;
+    }
+   }
+  }
+
+  match /{document=**} { allow read, write: if false; }
+ }
+}
