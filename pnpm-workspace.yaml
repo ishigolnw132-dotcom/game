@@ -4,11 +4,11 @@ minimumReleaseAgeIgnoreMissingTime: false
 trustLockfile: false
 strictDepBuilds: true
 allowBuilds:
-  '@firebase/util': set this to true or false
+  '@firebase/util': true
   esbuild: true
   fsevents: true
-  protobufjs: set this to true or false
-  re2: set this to true or false
+  protobufjs: true
+  re2: true
   sharp: true
   unrs-resolver: true
   workerd: true
