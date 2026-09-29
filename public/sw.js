@@ -1,4 +1,4 @@
-const CACHE='code-quest-3d-v7';
+const CACHE='code-quest-3d-v8';
 const BASE=new URL('./',self.location.href);
 const asset=(p)=>new URL(p,BASE).toString();
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(['manifest.json','favicon.svg','icon-192.png','icon-512.png'].map(asset))).then(()=>self.skipWaiting())));
