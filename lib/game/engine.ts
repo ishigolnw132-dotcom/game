@@ -7,19 +7,22 @@ export function generateMap(level: Level, seed: string, difficulty: Difficulty =
  if (!/^[A-Za-z0-9-]{1,64}$/.test(seed)) throw new Error('รหัสแผนที่ต้องเป็นตัวอักษรอังกฤษ ตัวเลข หรือขีดกลาง ไม่เกิน 64 ตัว');
  const rnd = random(seed + level.id + difficulty), rules=level.mapRules, size=rules?.gridSize||7, end=size-2;
  const start = { x: 1, z: end }, path: Point[] = [{ ...start }];
- if (rules?.layout === 'straight') for (let z = end-1; z >= Math.max(1,end-3); z--) path.push({ x: 1, z });
+ const fixed = seed.endsWith('-2026');
+ if (rules?.layout === 'straight') for (let z = end-1; z >= Math.max(1,end-(level.id===0?3:fixed?3:2+Math.floor(rnd()*3))); z--) path.push({ x: 1, z });
  else if (rules?.layout==='circuit'||(!rules&&level.kind==='story')) { for (let z = end-1; z >= 1; z--) path.push({ x: 1, z }); for (let x = 2; x <= end; x++) path.push({ x, z: 1 }); for (let z = 2; z <= end; z++) path.push({ x: end, z }); for (let x = end-1; x >= 2; x--) path.push({ x, z: end }); }
- else { const corner = level.kind === 'loop' ? 1 : difficulty === 'easy' ? 3 : difficulty === 'hard' ? 1 : 2;
- for (let z = end-1; z >= corner; z--) path.push({ x: 1, z }); for (let x = 2; x <= end; x++) path.push({ x, z: corner });
- if (difficulty === 'hard' && level.kind !== 'loop') for (let z = 2; z <= 3; z++) path.push({ x: end, z }); }
+ else { const corner = fixed ? (level.kind === 'loop' ? 1 : difficulty === 'easy' ? 3 : difficulty === 'hard' ? 1 : 2) : 1+Math.floor(rnd()*Math.min(3,end-1));
+ const lastX = fixed ? end : Math.max(3,end-Math.floor(rnd()*3));
+ for (let z = end-1; z >= corner; z--) path.push({ x: 1, z }); for (let x = 2; x <= lastX; x++) path.push({ x, z: corner });
+ if (difficulty === 'hard' && level.kind !== 'loop' && corner===1) for (let z = 2; z <= 3; z++) path.push({ x: lastX, z }); }
  const goal = { ...path[path.length - 1] }; let wrongGoal: Point | undefined;
  if (level.kind === 'logic') { wrongGoal = { x: 1, z: 0 }; for (let z = path.find(p => p.x === 2)!.z - 1; z >= 0; z--) path.push({ x: 1, z }); }
- const item = ['key', 'delivery'].includes(level.kind) ? { ...path[Math.min(path.length-2,rules?.itemIndex??2)] } : undefined;
- const gate = level.kind === 'key' ? { ...path[Math.min(path.length-1,Math.max((rules?.itemIndex??2)+1,rules?.gateIndex??4))] } : undefined;
+ const itemIndex = fixed ? Math.min(path.length-2,rules?.itemIndex??2) : Math.max(1,Math.min(path.length-2,1+Math.floor(rnd()*Math.max(1,path.length-3))));
+ const item = ['key', 'delivery'].includes(level.kind) ? { ...path[itemIndex] } : undefined;
+ const gate = level.kind === 'key' ? { ...path[Math.min(path.length-1,Math.max(itemIndex+1,fixed?(rules?.gateIndex??4):itemIndex+1+Math.floor(rnd()*Math.max(1,path.length-itemIndex-1))))] } : undefined;
  const walkable = new Set(path.map(key)), obstacles: Point[] = [];
  for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) if (!walkable.has(`${x},${z}`) && rnd() < (rules?.obstacleDensity??.53)) obstacles.push({ x, z });
  const map: GameMap = { seed, levelId: level.id, size, start, direction: 0, goal, wrongGoal, path, item, gate, obstacles, optimal: [] };
- const turns = rules?.rotate===false || seed.endsWith('-2026') ? 0 : Math.floor(rnd()*4);
+ const turns = fixed || (rules?.rotate===false&&level.id===0) ? 0 : Math.floor(rnd()*4);
  const rotate = (p: Point): Point => { let q = {...p}; for (let i=0;i<turns;i++) q={x:size-1-q.z,z:q.x}; return q; };
  map.start=rotate(map.start);map.goal=rotate(map.goal);map.path=map.path.map(rotate);map.obstacles=map.obstacles.map(rotate);map.direction=turns as Direction;if(map.item)map.item=rotate(map.item);if(map.gate)map.gate=rotate(map.gate);if(map.wrongGoal)map.wrongGoal=rotate(map.wrongGoal);
  map.optimal = solve(map, level.kind === 'delivery'); if (!map.optimal.length) throw new Error('แผนที่นี้ไม่มีเส้นทางที่แก้ได้'); return map;
@@ -59,11 +62,26 @@ export function transition(state: GameState, c: Command, map: GameMap): GameStat
 }
 export function completion(level: Level, map: GameMap, s: GameState, context: { prediction: boolean; storyboard: boolean; customize: boolean }): { won: boolean; missing: string[] } {
  const missing: string[] = [];
- if (level.kind !== 'story' && !same(s.position, map.goal)) missing.push(level.kind === 'logic' ? 'เดินไปยังคำตอบ X' : 'พาบอทไปถึงดาว');
+ if (level.kind !== 'story' && !s.touched && !same(s.position, map.goal)) missing.push(level.kind === 'logic' ? 'เดินไปยังคำตอบ X' : 'พาบอทไปถึงดาว');
  if (level.kind === 'key' && !s.picked) missing.push('เก็บกุญแจ'); if (level.kind === 'delivery' && !s.delivered) missing.push('เก็บและวางของบนช่องดาว');
  const labels: Record<string,string> = { prediction: 'ตอบคำถามทำนายผลให้ถูกต้อง', storyboard: 'เรียงฉากเรื่องให้ถูกต้อง', customize: 'เลือกตัวละครและฉาก', story3: 'บทพูดอย่างน้อย 3 ประโยค', move2: 'เดินอย่างน้อย 2 ก้าว', move4: 'เดินอย่างน้อย 4 ก้าว', say: 'ให้บอทพูด', friend: 'ให้เพื่อนพูดตอบ', hide: 'ซ่อนตัว', show: 'แสดงตัว', repeat: 'ใช้บล็อกทำซ้ำ', key: 'เรียกเหตุการณ์ Space', broadcast: 'ส่งสัญญาณ', receive: 'รับสัญญาณ', event: 'ใช้เหตุการณ์เริ่มเกมหรือ Space', ending: 'ใช้บล็อกจบเรื่อง' };
  for (const r of level.required || []) { let ok = s.features.includes(r); if (r in context) ok = context[r as keyof typeof context]; if (r === 'story3') ok = s.log.length >= 3; if (r === 'move2') ok = s.steps >= 2; if (r === 'move4') ok = s.steps >= 4; if (r === 'ending') ok = s.ended; if (!ok) missing.push(labels[r] || r); }
  return { won: missing.length === 0, missing };
+}
+export function predictionFor(level: Level, map: GameMap) {
+ if (!level.prediction) return undefined;
+ if (level.id!==3 || !level.prediction.question.startsWith('เริ่มหันเหนือ → เลี้ยวขวา → เลี้ยวขวา')) return level.prediction;
+ if (map.seed.endsWith('-2026')) return level.prediction;
+ const r=random(map.seed+'-prediction-'+level.id);
+ const first=r()<.5?'ซ้าย':'ขวา',second=r()<.5?'ซ้าย':'ขวา';
+ const delta=(first==='ซ้าย'?-1:1)+(second==='ซ้าย'?-1:1);
+ return {...level.prediction,question:`เริ่มหัน${['เหนือ','ตะวันออก','ใต้','ตะวันตก'][map.direction]} → เลี้ยว${first} → เลี้ยว${second} บอทจะหันทิศใด?`,answer:(map.direction+delta+4)%4};
+}
+export function missionProgress(level:Level,map:GameMap,s:GameState,context:{prediction:boolean;storyboard:boolean;customize:boolean}){
+ const missing=completion(level,map,s,context).missing;
+ const labels:Record<string,string>={prediction:'ตอบคำถามทำนายผลให้ถูกต้อง',storyboard:'เรียงฉากเรื่องให้ถูกต้อง',customize:'เลือกตัวละครและฉาก',story3:'บทพูดอย่างน้อย 3 ประโยค',move2:'เดินอย่างน้อย 2 ก้าว',move4:'เดินอย่างน้อย 4 ก้าว',say:'ให้บอทพูด',friend:'ให้เพื่อนพูดตอบ',hide:'ซ่อนตัว',show:'แสดงตัว',repeat:'ใช้บล็อกทำซ้ำ',key:'เรียกเหตุการณ์ Space',broadcast:'ส่งสัญญาณ',receive:'รับสัญญาณ',event:'ใช้เหตุการณ์เริ่มเกมหรือ Space',ending:'ใช้บล็อกจบเรื่อง'};
+ const goals=[...(level.kind==='story'?[]:[level.kind==='logic'?'เดินไปยังคำตอบ X':'พาบอทไปถึงดาว']),...(level.kind==='key'?['เก็บกุญแจ']:level.kind==='delivery'?['เก็บและวางของบนช่องดาว']:[]),...(level.required||[]).map(r=>labels[r]||r)];
+ return {done:goals.length-missing.length,total:goals.length,goals:goals.map(label=>({label,done:!missing.includes(label)})),missing,won:missing.length===0};
 }
 export function countBlocks(p: Program): number { const count = (cs: Command[]): number => cs.reduce((sum,c) => sum + 1 + count(c.body || []),0); return Object.values(p).reduce((n,cs) => n + count(cs),0); }
 export function scoreResult(level: Level, map: GameMap, blocks: number, attempts: number, seconds: number) {

@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "mode": "spark-direct",
+  "schoolId": "watniyom-yatra",
+  "firebase": {
+    "apiKey": "AIzaSyAqHvQsE2oIHf1SPaVKacaarow8KqE_P6c",
+    "authDomain": "gamme-25bf3.firebaseapp.com",
+    "projectId": "gamme-25bf3",
+    "storageBucket": "gamme-25bf3.firebasestorage.app",
+    "messagingSenderId": "446993464901",
+    "appId": "1:446993464901:web:86fce101939a8d62bf2d2c",
+    "measurementId": "G-D3GX1WX0ND"
+  },
+  "appCheckSiteKey": "",
+  "assets": []
+}

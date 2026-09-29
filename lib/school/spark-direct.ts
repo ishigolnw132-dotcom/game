@@ -17,7 +17,7 @@ const clean=(v:any):any=>v instanceof Timestamp?v.toMillis():Array.isArray(v)?v.
 const schoolRef=(db:Firestore,sid:string)=>doc(db,'schools',sid),sub=(db:Firestore,sid:string,col:string,key:string)=>doc(db,'schools',sid,col,key),subcol=(db:Firestore,sid:string,col:string)=>collection(db,'schools',sid,col);
 const randomId=()=>crypto.randomUUID(),randomInt=(a:number,b:number)=>a+Math.floor(crypto.getRandomValues(new Uint32Array(1))[0]/4294967296*(b-a));
 async function hash(v:string){const out=await crypto.subtle.digest('SHA-256',enc.encode(v));return [...new Uint8Array(out)].map(x=>x.toString(16).padStart(2,'0')).join('')}
-async function read(ref:any){const s=await getDoc(ref);return s.exists()?clean({...s.data(),id:s.id}):null}
+async function read(ref:any){const s=await getDoc(ref);return s.exists()?clean({...s.data() as Record<string,unknown>,id:s.id}):null}
 async function audit(c:SparkDirectContext,u:Identity,action:string,target:string,detail:Data={}){await setDoc(sub(c.db,u.schoolId,'system_logs',randomId()),{action,target,actor:u.uid,role:u.role,schoolId:u.schoolId,detail,createdAt:serverTimestamp()})}
 const defaults=(levelId:number):MissionSettings=>({level:structuredClone(getLevel(levelId)),active:true,energy:false,startEnergy:40,costs:{move:1,turn:1,pick:2,drop:2},weights:{...DEFAULT_WEIGHTS}});
 function fail(message:string):never{throw Error(message)}
