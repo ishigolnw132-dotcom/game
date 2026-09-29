@@ -1,3 +1,5 @@
+> อัปเดต V0.7: ดูรายการเปลี่ยนแปลงและผลทดสอบที่ `V0.7_UPGRADE_TH.md`
+
 # CODE QUEST 3D — GitHub Pages + Firebase Spark Edition
 
 เวอร์ชันนี้ปรับจาก source เดิมให้ทำงานแบบ **ฟรี 100% โดยไม่ต้องเปิด Billing/Blaze**:
