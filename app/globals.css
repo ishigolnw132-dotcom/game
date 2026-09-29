@@ -23,3 +23,33 @@ button.star-total{border-top:0;border-bottom:0;border-left:0;background:none}
 @media(max-width:600px){.school-container{padding:20px 15px 50px}.school-header{padding:14px;gap:10px}.school-header>div{gap:7px}.school-header .outline-btn{padding:8px;font-size:12px}.school-brand{font-size:15px;gap:7px}.school-brand em{display:none}.school-heading{align-items:flex-start;flex-direction:column}.school-heading h1{font-size:25px}.school-heading p{font-size:14px}.school-metrics{gap:8px}.school-metrics>div{padding:15px 12px;border-radius:15px}.school-metrics span{font-size:12px}.school-metrics b{font-size:30px}.school-cards{grid-template-columns:1fr}.school-toolbar{gap:8px}.school-toolbar>[data-slot=select-trigger]{flex:1;min-width:130px;max-width:100%}.school-login,.school-setup,.student-lobby{margin:14px auto;padding:24px 18px;border-radius:20px}.school-table th,.school-table td{padding:12px}.room-top img{width:110px;height:110px}.room-code{font-size:37px}.school-game-bar{font-size:12px;flex-wrap:wrap;padding:8px 12px;gap:6px}.school-game-bar>span:nth-child(2){display:none}.school-checks{grid-template-columns:1fr}.column-mapping{gap:10px}.school-dialog .primary-btn{white-space:normal}}
 
 .school-select{width:100%;min-height:42px;border:1px solid #dce6dd;border-radius:10px;background:white;padding:8px;color:#2e4c3c;font:inherit}.student-stage{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid #e0e8dd;border-radius:12px;background:#f7faf3}.student-stage span{color:#64816b;font-size:13px}.student-progress .stage-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}.student-progress{margin-bottom:28px}.student-progress h3{margin-top:20px}
+
+/* V0.7 compact game layout and mission progress */
+.mission-toggle{border:0;background:#eaf5ec;color:#276d4a;border-radius:9px;padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer}
+.mission-collapsed .mission-details,.mission-collapsed .mission-goals,.mission-collapsed .mission-action{display:none!important}
+.mission-collapsed .mission-toggle svg{transform:rotate(180deg)}
+.objective-list{display:grid;gap:6px;margin:12px 0;padding:10px;border-radius:10px;background:#f4f8f2;font-size:12px;line-height:1.35}
+.objective-list strong{font-size:13px;color:#215c3f}.objective-list span{color:#806e54}.objective-list span.done{color:#26815a}
+.reached-banner{background:#fff7d4;border:1px solid #f2d475;color:#735323;padding:8px 10px;border-radius:10px;margin:7px 0;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.reached-banner button{border:0;border-radius:7px;background:#286f4c;color:white;padding:5px 9px;white-space:nowrap;cursor:pointer}
+@media(min-width:1100px){
+ html,body{height:100%}.cq-app{height:100dvh;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+ .cq-app .topbar{height:54px;min-height:54px;padding:0 24px}.cq-app .page-heading{padding:6px 26px;height:65px;min-height:65px}.cq-app .page-heading h1{font-size:19px;line-height:1.3}.cq-app .page-heading p{display:none}
+ .cq-app .game-layout{display:grid;grid-template-columns:minmax(195px,21%) minmax(360px,1fr) minmax(300px,30%);gap:10px;margin:0 14px;min-height:0;flex:1;align-items:stretch}
+ .cq-app .mission-column,.cq-app .play-column,.cq-app .code-column{min-height:0;height:100%}
+ .cq-app .mission-column{display:flex;flex-direction:column;overflow:auto}.cq-app .mission-card{padding:12px;display:block}.cq-app .mission-card h2{font-size:17px;margin:7px 0}.cq-app .mission-card>p{font-size:12px}.cq-app .mission-goals{margin-top:8px}.cq-app .mission-goals>div{padding:7px}.cq-app .companion-card,.cq-app .tutorial-link,.cq-app .tip-box{display:none}
+ .cq-app .play-column{display:flex;flex-direction:column}.cq-app .scene-card{height:auto;flex:1;min-height:180px}.cq-app .game-status{min-height:34px}.cq-app .scene-note{min-height:30px}
+ .cq-app .code-column{display:flex;flex-direction:column}.cq-app .editor-card{display:flex;flex-direction:column;flex:1;min-height:180px}.cq-app .blockly-host{height:auto!important;flex:1;min-height:120px}.cq-app .run-panel{margin-top:4px}.cq-app .save-status{display:none}
+ .cq-app .world-footer{margin:7px 14px 6px;min-height:49px;height:49px;padding:5px 12px;gap:12px}.cq-app .world-footer-title small,.cq-app .world-next small{display:none}.cq-app .bottom-line{display:none}
+}
+.game-layout:fullscreen{background:#e9f2e8;padding:10px;box-sizing:border-box;margin:0!important;width:100vw;height:100dvh;display:grid!important;grid-template-columns:minmax(210px,21%) minmax(360px,1fr) minmax(300px,28%);gap:10px;align-items:stretch;overflow:hidden}
+.game-layout:fullscreen .mission-column,.game-layout:fullscreen .play-column,.game-layout:fullscreen .code-column{min-height:0;height:100%;overflow:auto}
+.game-layout:fullscreen .play-column,.game-layout:fullscreen .code-column{display:flex;flex-direction:column}
+.game-layout:fullscreen .scene-card{height:auto;flex:1;min-height:160px}.game-layout:fullscreen .editor-card{display:flex;flex-direction:column;flex:1;min-height:180px}.game-layout:fullscreen .blockly-host{height:auto!important;flex:1;min-height:120px}
+.game-layout:fullscreen .mission-card{display:block;padding:12px}.game-layout:fullscreen .companion-card,.game-layout:fullscreen .tutorial-link,.game-layout:fullscreen .tip-box{display:none}.game-layout:fullscreen .run-panel{margin-top:5px}
+.game-layout:fullscreen .mission-toggle{display:flex}.game-layout:fullscreen .mission-card h2{font-size:18px;margin:8px 0}
+@media(max-width:1099px){.mission-toggle{margin-left:auto}.objective-list{margin:8px 0}.cq-app{min-height:100dvh}}
+@media(max-width:720px){.game-layout:fullscreen{display:flex!important;flex-direction:column;overflow:auto}.game-layout:fullscreen .mission-column{height:auto;overflow:visible}.game-layout:fullscreen .play-column{min-height:45dvh;flex:1}.game-layout:fullscreen .code-column{min-height:35dvh}.game-layout:fullscreen .mission-collapsed .mission-card{min-height:48px}}
+.minimap-toggle{position:absolute;left:12px;top:54px;z-index:4;padding:5px 9px;border:1px solid #d3e1d0;background:#fffdf5df;color:#255c43;border-radius:8px;font-size:11px;cursor:pointer}
+.game-minimap{position:absolute;left:12px;top:84px;z-index:4;background:#fffdf5ef;border:1px solid #bfd6c7;border-radius:10px;padding:6px;box-shadow:0 3px 15px #163c2133}
+.game-minimap-grid{display:grid;gap:2px;width:126px;height:126px}.game-minimap-grid span{background:#b8d4b5;border-radius:2px;font-size:10px;display:grid;place-items:center}.game-minimap-grid span.path{background:#e7d9aa}
